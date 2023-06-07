@@ -68,6 +68,7 @@ resource "aws_cloudfront_function" "this" {
 }
 
 resource "aws_cloudfront_distribution" "this" {
+  comment = "ndeno dev"
   origin {
     domain_name              = aws_s3_bucket.this.bucket_regional_domain_name
     origin_access_control_id = aws_cloudfront_origin_access_control.this.id
