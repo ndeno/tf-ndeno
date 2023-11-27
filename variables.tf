@@ -14,12 +14,12 @@ variable "region" {
   default     = "us-east-1"
 }
 
-variable "ndeno_domain" {
-  description = "The primary domain name of the website"
-  sensitive   = true
-}
+# variable "ndeno_domain" {
+#   description = "The primary domain name of the website"
+#   sensitive = true
+# }
 
-variable "bucket_prefix" {
-  description = "The prefix name of the S3 bucket wich would host the static files"
-  default     = "simple-fedmod."
-}
+# variable "bucket_prefix" {
+#   description = "The prefix name of the S3 bucket wich would host the static files"
+#    default     = "dev."
+# }
