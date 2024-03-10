@@ -14,7 +14,7 @@ variable "region" {
   default     = "us-east-1"
 }
 
-variable "ndeno_domain" {
+variable "NDENO_DEV_DOMAIN" {
   description = "The primary domain name of the website"
   sensitive = true
 }
