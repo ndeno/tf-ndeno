@@ -59,6 +59,13 @@ resource "aws_cloudfront_distribution" "ndeno-web" {
       }
     }
 
+    # function_association {
+    #   event_type   = "viewer-request"
+    #   function_arn = aws_cloudfront_function.redirect.arn
+    #   # lambda_arn   = "${aws_cloudfront_function.redirect.arn}:0"
+    #   # include_body = false
+    # }
+
     viewer_protocol_policy = "allow-all"
     min_ttl                = 0
     default_ttl            = 3600
@@ -81,29 +88,33 @@ resource "aws_cloudfront_distribution" "ndeno-web" {
   }
 }
 
-
 data "aws_iam_policy_document" "ndeno-web" {
   statement {
+    actions   = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.ndeno-web.arn}/*"]
+
     principals {
-      type        = "AWS"
-      identifiers = [aws_cloudfront_distribution.ndeno-web.arn]
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
     }
-
-    actions = [
-      "s3:GetObject",
-      "s3:ListBucket",
-    ]
-
-    resources = [
-      aws_s3_bucket.ndeno-web.arn,
-      "${aws_s3_bucket.ndeno-web.arn}/*",
-    ]
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceArn"
+      values   = [aws_cloudfront_distribution.ndeno-web.arn]
+    }
   }
 }
 
 resource "aws_s3_bucket_policy" "ndeno-web" {
   bucket = aws_s3_bucket.ndeno-web.id
   policy = data.aws_iam_policy_document.ndeno-web.json
+}
+
+resource "aws_cloudfront_function" "redirect" {
+  name    = "redirect"
+  runtime = "cloudfront-js-1.0"
+  publish = true
+  code    = file("${path.module}/modules/cloudfront_functions/redirect.js")
 }
 
 resource "aws_s3_bucket_website_configuration" "ndeno-web" {
