@@ -4,28 +4,28 @@ variable "aws_region" {
   default     = "eu-central-1"
 }
 
-data "aws_acm_certificate" "ndeno-dev-acm-cert" {
+data "aws_acm_certificate" "ndeno-dev" {
   domain   = var.NDENO_DEV_DOMAIN
   statuses = ["ISSUED"]
 }
 
-resource "aws_s3_bucket" "ndeno-dev-bucket" {
-  bucket = "dev-bucket-${var.NDENO_DEV_DOMAIN}-1"
+resource "aws_s3_bucket" "ndeno-app" {
+  bucket = "app-${var.NDENO_DEV_DOMAIN}-1"
 
   tags = {
-    Name = "bucket-1"
+    Name = "app-bucket"
   }
 }
 
-resource "aws_s3_bucket" "ndeno-static-bucket" {
-  bucket = "static-bucket-${var.NDENO_DEV_DOMAIN}-1"
+resource "aws_s3_bucket" "ndeno-web" {
+  bucket = "web-${var.NDENO_DEV_DOMAIN}-1"
 
   tags = {
-    Name = "bucket-1"
+    Name = "web-bucket"
   }
 }
 
-resource "aws_cloudfront_origin_access_control" "ndeno-default" {
+resource "aws_cloudfront_origin_access_control" "ndeno-web" {
   name                              = "ndeno-default"
   description                       = "Default Policy"
   origin_access_control_origin_type = "s3"
@@ -33,24 +33,23 @@ resource "aws_cloudfront_origin_access_control" "ndeno-default" {
   signing_protocol                  = "sigv4"
 }
 
-resource "aws_cloudfront_distribution" "s3_distribution" {
+resource "aws_cloudfront_distribution" "ndeno-web" {
   origin {
-    domain_name              = aws_s3_bucket.ndeno-static-bucket.bucket_regional_domain_name
-    origin_access_control_id = aws_cloudfront_origin_access_control.ndeno-default.id
-    origin_id                = aws_s3_bucket.ndeno-static-bucket.id
+    domain_name              = aws_s3_bucket.ndeno-web.bucket_regional_domain_name
+    origin_access_control_id = aws_cloudfront_origin_access_control.ndeno-web.id
+    origin_id                = aws_s3_bucket.ndeno-web.id
   }
 
-  enabled             = true
-  is_ipv6_enabled     = true
-  comment             = "Some comment"
-  default_root_object = "index.html"
+  enabled         = true
+  is_ipv6_enabled = true
+  # default_root_object = "index.html"
 
   aliases = [var.NDENO_DEV_DOMAIN]
 
   default_cache_behavior {
     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods   = ["GET", "HEAD"]
-    target_origin_id = aws_s3_bucket.ndeno-static-bucket.id
+    target_origin_id = aws_s3_bucket.ndeno-web.id
 
     forwarded_values {
       query_string = false
@@ -77,29 +76,38 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
 
   viewer_certificate {
     cloudfront_default_certificate = true
+    acm_certificate_arn            = data.aws_acm_certificate.ndeno-dev.arn
+    ssl_support_method             = "sni-only"
   }
 }
 
-# // TODO
-# data "aws_iam_policy_document" "ndeno-static-iam-policy-document" {
-#   statement {
-#     actions   = ["s3:GetObject"]
-#     resources = ["${aws_s3_bucket.ndeno-static-bucket.arn}/*"]
 
-#     principals {
-#       type        = "AWS"
-#       identifiers = [aws_cloudfront_origin_access_identity.example.iam_arn]
-#     }
-#   }
-# }
+data "aws_iam_policy_document" "ndeno-web" {
+  statement {
+    principals {
+      type        = "AWS"
+      identifiers = [aws_cloudfront_distribution.ndeno-web.arn]
+    }
 
-# resource "aws_s3_bucket_policy" "examndeno-static-bucket-policy" {
-#   bucket = aws_s3_bucket.ndeno-static-bucket.id
-#   policy = data.aws_iam_policy_document.ndeno-static-iam-policy-document.json
-# }
+    actions = [
+      "s3:GetObject",
+      "s3:ListBucket",
+    ]
 
-resource "aws_s3_bucket_website_configuration" "ndeno-static-bucket-config" {
-  bucket = aws_s3_bucket.ndeno-static-bucket.id
+    resources = [
+      aws_s3_bucket.ndeno-web.arn,
+      "${aws_s3_bucket.ndeno-web.arn}/*",
+    ]
+  }
+}
+
+resource "aws_s3_bucket_policy" "ndeno-web" {
+  bucket = aws_s3_bucket.ndeno-web.id
+  policy = data.aws_iam_policy_document.ndeno-web.json
+}
+
+resource "aws_s3_bucket_website_configuration" "ndeno-web" {
+  bucket = aws_s3_bucket.ndeno-web.id
 
   index_document {
     suffix = "index.html"
