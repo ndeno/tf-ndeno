@@ -24,6 +24,17 @@ resource "aws_route53_record" "ndeno-web" {
     evaluate_target_health = false
   }
 }
+resource "aws_route53_record" "ndeno-web-subdomain" {
+  zone_id = data.aws_route53_zone.ndeno-dev.zone_id
+  name    = "www.${var.NDENO_DEV_DOMAIN}"
+  type    = "A"
+
+  alias {
+    name                   = aws_cloudfront_distribution.ndeno-web.domain_name
+    zone_id                = aws_cloudfront_distribution.ndeno-web.hosted_zone_id
+    evaluate_target_health = false
+  }
+}
 
 resource "aws_s3_bucket" "ndeno-app" {
   bucket = "app-${var.NDENO_DEV_DOMAIN}-1"
@@ -60,7 +71,7 @@ resource "aws_cloudfront_distribution" "ndeno-web" {
   is_ipv6_enabled = true
   # default_root_object = "index.html"
 
-  aliases = [var.NDENO_DEV_DOMAIN]
+  aliases = [var.NDENO_DEV_DOMAIN, "www.${var.NDENO_DEV_DOMAIN}"]
 
   default_cache_behavior {
     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
@@ -81,9 +92,9 @@ resource "aws_cloudfront_distribution" "ndeno-web" {
     }
 
     viewer_protocol_policy = "redirect-to-https"
-    min_ttl     = 0
-    default_ttl = 3600
-    max_ttl     = 86400
+    min_ttl                = 0
+    default_ttl            = 3600
+    max_ttl                = 86400
   }
 
   price_class = "PriceClass_100"
