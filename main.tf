@@ -133,11 +133,11 @@ resource "aws_cloudfront_function" "redirect" {
   name    = "redirect"
   runtime = "cloudfront-js-1.0"
   publish = true
+  // TODO - update the dir, not a module
   code    = file("${path.module}/modules/cloudfront_functions/redirect.js")
 }
 
 // Dev Domain
-
 resource "aws_route53_record" "ndeno-dev" {
   zone_id = data.aws_route53_zone.ndeno-dev.zone_id
   name    = "dev.${var.NDENO_DEV_DOMAIN}"
