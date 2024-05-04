@@ -18,3 +18,16 @@ variable "NDENO_DEV_DOMAIN" {
   description = "The primary domain name of the website"
   sensitive = true
 }
+variable "NDENO_DEV_USER_POOL_ID" {
+  description = "user pool id"
+  sensitive = true
+}
+variable "NDENO_DEV_USER_POOL_NAME" {
+  description = "user pool name"
+  sensitive = true
+}
+
+variable "NDENO_DEV_PUBLIC_CLIENT_1_ID" {
+  description = "client id"
+  sensitive = true
+}
